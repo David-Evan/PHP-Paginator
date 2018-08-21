@@ -88,7 +88,7 @@ class Paginator{
         $this->elementToPaginate = $elementToPaginate;
 
         // Maximum existing page
-        $this->totalPage = ceil(count($this->elementToPaginate)/$this->elementsPerPage);
+        $this->totalPage = intval(ceil(count($this->elementToPaginate)/$this->elementsPerPage));
 
         // True : False depending if exist a page before/after current, else prev/next page number;
         $this->nextPage = (($this->currentPage+1) >= $this->totalPage) ?false:$this->currentPage+1;
