@@ -3,7 +3,7 @@
   * @author David EVAN
   * @source http://github.com/David-Evan/paginator
   * @copyright LICENCE M.I.T
-  * 
+  *
   * Paginator is a generic class used to easing pagination when you need full control of Data and/or UI.
   */
 
@@ -44,16 +44,16 @@ class Paginator{
 
     /**
      * Array of previous / next page in paginator. Could be used to display pagination component.
-     * 
+     *
      * Eg 1 :  You have 10 pages. The paginator range is 2. The current page is 5.
      * Result : array([3],[4],[5],[6],[7])
      * Eg 2 :  You have 10 pages. The paginator range is 2. The current page is 1.
      * Result: array([1][2][3])
-     * 
+     *
      * @var array
      */
     protected $pageList = [];
-    
+
     /**
      * If the next page exist, return page number, else return false
      * You can use {::isCurrentPageLastOne} to have a true/false return.
@@ -224,19 +224,19 @@ class Paginator{
       public function getElementToPaginate(){
         return $this->elementToPaginate;
       }
-  
+
       public function getPaginatorRange(){
         return $this->paginatorRange;
       }
-  
+
       public function getElementsPerPage(){
         return $this->elementsPerPage;
       }
-  
+
       public function getCurrentPage(){
         return $this->currentPage;
       }
-  
+
       public function getTotalPage(){
         return $this->totalPage;
       }
@@ -248,7 +248,7 @@ class Paginator{
       public function getNextPage(){
         return $this->nextPage;
       }
-  
+
       public function getPreviousPage(){
         return $this->previousPage;
       }
