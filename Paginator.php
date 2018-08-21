@@ -10,7 +10,7 @@
 class Paginator{
 
     /**
-     * Data to paginate. (PDO:FETCH_OBJ / PDO:FETCH_ASSOC working well)
+     * Data to paginate. Any array (eg PDO:FETCH_OBJ / PDO:FETCH_ASSOC working well)
      * @var array
      */
     protected $elementToPaginate;
@@ -38,9 +38,22 @@ class Paginator{
 
     /**
      * Total page you have in your data array
+     * @var int
      */
     protected $totalPage;
 
+    /**
+     * Array of previous / next page in paginator. Could be used to display pagination component.
+     * 
+     * Eg 1 :  You have 10 pages. The paginator range is 2. The current page is 5.
+     * Result : array([3],[4],[5],[6],[7])
+     * Eg 2 :  You have 10 pages. The paginator range is 2. The current page is 1.
+     * Result: array([1][2][3])
+     * 
+     * @var array
+     */
+    protected $pageList = [];
+    
     /**
      * If the next page exist, return page number, else return false
      * You can use {::isCurrentPageLastOne} to have a true/false return.
@@ -81,6 +94,24 @@ class Paginator{
         $this->nextPage = (($this->currentPage+1) >= $this->totalPage) ?false:$this->currentPage+1;
         $this->previousPage = (($this->currentPage-1) < 1) ?false:$this->currentPage-1;
 
+        // Get the page list from current page
+        $this->buildPageList();
+
+    }
+
+    /**
+     * Build the 'page list'. See doc of property. Internal use only.
+     * You can get the result with ::getPageList() method
+     * @return array
+     */
+    protected function buildPageList(){
+        for($i = $this->currentPage-$this->paginatorRange;
+            $i <= $this->currentPage+$this->paginatorRange;
+            $i++)
+            {
+                if($this->existPage($i))
+                    $this->pageList[] = $i;
+            }
     }
 
     /**
@@ -210,6 +241,10 @@ class Paginator{
         return $this->totalPage;
       }
 
+      public function getPageList(){
+        return $this->pageList;
+      }
+
       public function getNextPage(){
         return $this->nextPage;
       }
@@ -231,7 +266,7 @@ class Paginator{
  * To perform it job, Paginator need a data array, :
  * ['A', 'B', 'C', 'D'] ...
  *
- * It could be a PDO:FETCH_OBJ / PDO:FETCH_ASSOC
+ * It could be any array, like PDO:FETCH_OBJ / PDO:FETCH_ASSOC or custom data
  *
  * Also, you can custom this parameters :
  *  - Current page = (default : 1)
