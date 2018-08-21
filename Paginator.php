@@ -97,7 +97,7 @@ class Paginator{
      */
     public function getElementsForPage($page){
 
-        $buffer = $this->elementsPerPage;
+        $buffer = $this->elementToPaginate;
 
         $firstElement = ($page - 1) * $this->elementsPerPage;
 
