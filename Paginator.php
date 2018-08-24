@@ -1,7 +1,7 @@
 <?php
  /**
   * @author David EVAN
-  * @source http://github.com/David-Evan/paginator
+  * @source http://github.com/David-Evan/PHP-Paginator
   * @copyright LICENCE M.I.T
   *
   * Paginator is a generic class used to easing pagination when you need full control of Data and/or UI.
@@ -10,7 +10,13 @@
 class Paginator{
 
     /**
+     * URL Pattern used to generate custom url
+     */
+    const URL_PAGE_PATTERN = '/{page}/';
+
+    /**
      * Data to paginate. Any array (eg PDO:FETCH_OBJ / PDO:FETCH_ASSOC working well)
+     * 
      * @var array
      */
     protected $elementToPaginate;
@@ -19,12 +25,14 @@ class Paginator{
      * Page range after/before current page you need to display
      * eg : 1 = [<][...] [c-1] [c] [c+2] [...] [>]
      * eg : 2 = [<][...] [c-2] [c-1] [c] [c+1] [c+2] [...] [>]
+     * READ ONLY
      * @var int - default : 2
      */
     protected $paginatorRange;
 
     /**
      * Number of element per page you want to return
+     * READ ONLY
      * @var int - default : 3
      */
     protected $elementsPerPage;
@@ -32,12 +40,14 @@ class Paginator{
     /**
      * Current page you want to return. If you are over limits, paginator will only return empty array (array([]))
      * If you want to test if the current page is existing, you can use method {::currentPageExist()}
+     * READ ONLY
      * @var int - default : 1
      */
     protected $currentPage;
 
     /**
      * Total page you have in your data array
+     * READ ONLY
      * @var int
      */
     protected $totalPage;
@@ -50,6 +60,7 @@ class Paginator{
      * Eg 2 :  You have 10 pages. The paginator range is 2. The current page is 1.
      * Result: array([1][2][3])
      *
+     * READ ONLY
      * @var array
      */
     protected $pageList = [];
@@ -57,6 +68,7 @@ class Paginator{
     /**
      * If the next page exist, return page number, else return false
      * You can use {::isCurrentPageLastOne} to have a true/false return.
+     * READ ONLY
      * @var mixed (boolean - int)
      */
     protected $nextPage;
@@ -64,10 +76,28 @@ class Paginator{
     /**
      * If the previous page exist, return page number, else return false
      * You can use {::isCurrentPageFirstOne} to have a true/false return.
+     * READ ONLY
      * @var mixed (boolean - int)
      */
     protected $previousPage;
 
+
+    /**
+     * URL Template is used to generate custom URL for each pages.
+     * Paginator::URLPagePattern is the pattern to find/replace in your custom URL.
+     * Eg : http://www.mycustomwebsite/blog/{page}
+     * => : Will be replace by URL generator by : (for the second page)
+     *      http://www.mycustomwebsite/blog/2
+     * 
+     * 
+     * To get your URL, you can use method : getURLForPage(x) - getURLForFirstPage() - getURLForNextPage() etc...
+     * 
+     * If null, url methods will give you back null. You can use strict mode, also, url method will throw an error if you didn't set URL Template.
+     * 
+     * Get/Set - URL is generated each time you need it. You can change URLTemplate for another one anytime.
+     * @var string 
+     */
+    protected $URLTemplate = null;
 
     /**
      * Construct a paginator with your data array and parameters.
@@ -77,11 +107,12 @@ class Paginator{
      * @param int   elementPerPage - Number of element per page you want to have
      * @param int   paginatorRange - The range of page you have in your paginator. See property documentation to understand this one.
      */
-    public function __construct(array $elementToPaginate, $currentPage = 1, $elementsPerPage = 3, $paginatorRange = 2){
+    public function __construct(array $elementToPaginate, $currentPage = 1, $urlTemplate = null, $elementsPerPage = 3, $paginatorRange = 2){
 
         if(!is_int($currentPage) or !is_int($elementsPerPage) or !is_int($paginatorRange))
             throw new \Exception("Paginator need integer", 1);
 
+        $this->URLTemplate = $urlTemplate;
         $this->elementsPerPage = $elementsPerPage;
         $this->paginatorRange = $paginatorRange;
         $this->currentPage = $currentPage;
@@ -96,11 +127,11 @@ class Paginator{
 
         // Get the page list from current page
         $this->buildPageList();
-
     }
 
     /**
-     * Build the 'page list'. See doc of property. Internal use only.
+     * Internal use only.
+     * Build the 'page list'. See doc of property. 
      * You can get the result with ::getPageList() method
      * @return array
      */
@@ -113,6 +144,27 @@ class Paginator{
                     $this->pageList[] = $i;
             }
     }
+   
+     /**
+      * Internal use only.
+      * Return a generated url, using URL Template for $page.
+      * If page isn't exist, and no check isn't true, generated url will be @return null.
+      * If strict mode is used, and no template url is set, it will throw an Error.
+      *
+      * @param int $page
+      * @param boolean $noCheck
+      * @return mixed
+      */
+    protected function generateURLForPage($page, $noCheck = false){
+        
+        if(!is_int($page))
+            throw new \Exception('$page in GetURLForPage need to be a integer');
+
+        if(($this->existPage($page) || $noCheck === true) && $this->URLTemplate !== null) 
+            return preg_replace(self::URL_PAGE_PATTERN, $page ,$this->URLTemplate);
+        else
+            return null;
+    }
 
     /**
      * Return an array of data for the current page.
@@ -124,6 +176,7 @@ class Paginator{
 
     /**
      * Return an array of data for the specified page.
+     * If page didn't exist, return void array
      * @return array
      */
     public function getElementsForPage($page){
@@ -178,7 +231,6 @@ class Paginator{
         return false;
     }
 
-
     /**
      * Return true if the current page exist.
      * @param $page - Page to test if exist
@@ -199,7 +251,6 @@ class Paginator{
         return false;
     }
 
-
     /**
      * Return true if current page is the first one
      * @return bool
@@ -219,6 +270,62 @@ class Paginator{
             return true;
         return false;
     }
+
+    /**
+     * Return a generated url for page X.
+     * If page didn't exist, return false or, if @param $noCheck is true, give back url
+     * If strict mode isn't used, and urltemplate isn't set, return null
+     * If stict mode is used, and urltemplate isn't set, throw an Exception.
+     * 
+     * @param int $page
+     * @param boolean $noCheck - If true, you will get your page URL even if isn't exist
+     */
+    public function getURLForPage($page, $noCheck = false){
+        return $this->generateURLForPage($page, $noCheck);
+    }   
+
+    /**
+     * Shorcut to get URL For the first page.
+     * doc at paginator::getURLForPage(x)
+     * @return string
+     */
+    public function getURLForFirstPage(){
+        return $this->getURLForPage(1);
+    }
+
+    /**
+     * Shorcut to get URL For the last page.
+     * doc at paginator::getURLForPage(x)
+     * @return string
+     */
+    public function getURLForLastPage(){
+        return $this->getURLForPage($this->totalPage);
+    }
+
+    /**
+     * Shorcut to get URL For the next page.
+     * doc at paginator::getURLForPage(x)
+     * @return string
+     */
+    public function getURLForNextPage(){
+        if($this->nextPageExist())
+            return $this->getURLForPage($this->nextPage);
+        else
+            return null;
+    }
+
+    /**
+     * Shorcut to get URL For the previous page.
+     * doc at paginator::getURLForPage(x)
+     * @return string
+     */
+    public function getURLForPreviousPage(){
+        if($this->previousPageExist())
+            return $this->getURLForPage($this->previousPage);
+        else 
+            return null;
+    }
+
 
       /**** Getter ****/
       public function getElementToPaginate(){
@@ -251,6 +358,17 @@ class Paginator{
 
       public function getPreviousPage(){
         return $this->previousPage;
+      }
+
+      public function getURLTemplate(){
+        return $this->URLTemplate;
+      }
+
+      /**
+       * Alias for getTotalPage();
+       */
+      public function getLastPage(){
+        return $this->totalPage;
       }
 }
 
