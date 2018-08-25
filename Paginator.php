@@ -12,7 +12,7 @@ class Paginator{
     /**
      * URL Pattern used to generate custom url
      */
-    const URL_PAGE_PATTERN = '/{page}/';
+    const URL_DEFAULT_PAGE_PATTERN = '/{page}/';
 
     /**
      * Data to paginate. Any array (eg PDO:FETCH_OBJ / PDO:FETCH_ASSOC working well)
@@ -28,14 +28,14 @@ class Paginator{
      * READ ONLY
      * @var int - default : 2
      */
-    protected $paginatorRange;
+    protected $paginatorRange = 2;
 
     /**
      * Number of element per page you want to return
      * READ ONLY
      * @var int - default : 3
      */
-    protected $elementsPerPage;
+    protected $elementsPerPage = 3;
 
     /**
      * Current page you want to return. If you are over limits, paginator will only return empty array (array([]))
@@ -43,7 +43,7 @@ class Paginator{
      * READ ONLY
      * @var int - default : 1
      */
-    protected $currentPage;
+    protected $currentPage = 1;
 
     /**
      * Total page you have in your data array
@@ -94,34 +94,52 @@ class Paginator{
      * 
      * If null, url methods will give you back null. You can use strict mode, also, url method will throw an error if you didn't set URL Template.
      * 
-     * Get/Set - URL is generated each time you need it. You can change URLTemplate for another one anytime.
+     * Get/Set - URL is generated each time you need it. You can change URLTemplate for another one at anytime. (Paginator::SetURLTemplate())
      * @var string 
      */
     protected $URLTemplate = null;
 
     /**
+     * URL Pattern is used to generate custom URL for each pages (use search & replace)
+     * 
+     * Get/Set - URL is generated each time you need it. You can change URLPattern for another one at anytime. (Paginator::SetURLPattern())
+     * default : /{page}/
+     * @var Regex
+     */
+    protected $URLPattern = null;
+    
+    /**
+     * If you enable strict mode : 
+     *  - Use URL Generator (getURLxxx methods) without set URLTemplate will result by an \Exception
+     *  - Try to get Elements Data from a non-existing page will result by an \Exception
+     *
+     * @var boolean
+     */
+    protected $enableStrictMode = true;
+
+    /**
      * Construct a paginator with your data array and parameters.
      *
      * @param array elementToPaginate - The Data array
+     * 
+     * Others params : PaginatorOptions object or Array
      * @param int   currentPage - The current page you are
      * @param int   elementPerPage - Number of element per page you want to have
      * @param int   paginatorRange - The range of page you have in your paginator. See property documentation to understand this one.
+     * @param string URLTemplate - URL Template for url generation. Use the pattern (defaut : {page}) tu customize your URL
+     * @param boolean StrictMode - If true, strict mode will be activated. See @doc to understand strict/non-strict mode
      */
-    public function __construct(array $elementToPaginate, $currentPage = 1, $urlTemplate = null, $elementsPerPage = 3, $paginatorRange = 2){
+    public function __construct(array $elementToPaginate, $args = null){
 
-        if(!is_int($currentPage) or !is_int($elementsPerPage) or !is_int($paginatorRange))
-            throw new \Exception("Paginator need integer", 1);
+        // Set parameters. See method doc to understand.
+        $this->setPaginatorParameters($args);
 
-        $this->URLTemplate = $urlTemplate;
-        $this->elementsPerPage = $elementsPerPage;
-        $this->paginatorRange = $paginatorRange;
-        $this->currentPage = $currentPage;
         $this->elementToPaginate = $elementToPaginate;
-
+        
         // Maximum existing page
         $this->totalPage = intval(ceil(count($this->elementToPaginate)/$this->elementsPerPage));
 
-        // True : False depending if exist a page before/after current, else prev/next page number;
+        // True : False depending if exist a page before/after current, else prev/next = page number;
         $this->nextPage = (($this->currentPage+1) > $this->totalPage) ?false:$this->currentPage+1;
         $this->previousPage = (($this->currentPage-1) < 1) ?false:$this->currentPage-1;
 
@@ -129,6 +147,31 @@ class Paginator{
         $this->buildPageList();
     }
 
+    /**
+     * Internal use only
+     * Set parameters will convert a PaginatorOption object OR, options array into parameters.
+     * It use setXxxx methods to push parameters.
+     * Exception will be throwed if incorrect value.
+     * 
+     * You can use anonyms object, using IPaginatorOption interface or Instance of PaginatorOption to more simplicity.
+     * @return void
+     */
+    protected function setPaginatorParameters($params){
+        if($params === null)
+            return;
+
+        if(is_array($params) or $params instanceof PaginatorOptions)
+        {
+            if($params instanceof PaginatorOptions)
+                $params = $params->getObjectProperties();
+
+            foreach($params as $paramName => $paramValue){
+                $method = 'set'.$paramName;
+                $this->{ucfirst($method)}($paramValue);
+            }
+        }
+    }
+    
     /**
      * Internal use only.
      * Build the 'page list'. See doc of property. 
@@ -160,8 +203,10 @@ class Paginator{
         if(!is_int($page))
             throw new \Exception('$page in GetURLForPage need to be a integer');
 
+        $URLPattern = ($this->URLPattern !== null) ? $this->URLPattern: self::URL_DEFAULT_PAGE_PATTERN;
+
         if(($this->existPage($page) || $noCheck === true) && $this->URLTemplate !== null) 
-            return preg_replace(self::URL_PAGE_PATTERN, $page ,$this->URLTemplate);
+            return preg_replace($URLPattern, $page ,$this->URLTemplate);
         else
             return null;
     }
@@ -327,49 +372,99 @@ class Paginator{
     }
 
 
-      /**** Getter ****/
-      public function getElementToPaginate(){
+    /**** Getter ****/
+    public function getElementToPaginate(){
         return $this->elementToPaginate;
-      }
+    }
 
-      public function getPaginatorRange(){
+    public function getPaginatorRange(){
         return $this->paginatorRange;
-      }
+    }
 
-      public function getElementsPerPage(){
+    public function getElementsPerPage(){
         return $this->elementsPerPage;
-      }
+    }
 
-      public function getCurrentPage(){
+    public function getCurrentPage(){
         return $this->currentPage;
-      }
+    }
 
-      public function getTotalPage(){
+    public function getTotalPage(){
         return $this->totalPage;
-      }
+    }
 
-      public function getPageList(){
+    public function getPageList(){
         return $this->pageList;
-      }
+    }
 
-      public function getNextPage(){
+    public function getNextPage(){
         return $this->nextPage;
-      }
+    }
 
-      public function getPreviousPage(){
+    public function getPreviousPage(){
         return $this->previousPage;
-      }
+    }
 
-      public function getURLTemplate(){
+    public function getURLPattern(){
+        return $this->URLPattern;
+    }
+
+    public function getURLTemplate(){
         return $this->URLTemplate;
-      }
+    }
 
-      /**
-       * Alias for getTotalPage();
-       */
-      public function getLastPage(){
+    /**
+     * Alias for getTotalPage();
+     */
+    public function getLastPage(){
         return $this->totalPage;
-      }
+    }
+
+    /**** Setter ****/
+    protected function setPaginatorRange($paginatorRange){
+        if(is_int($paginatorRange))
+            $this->paginatorRange = $paginatorRange;
+        else
+            throw new \Exception('paginatorRange need to be an integer');
+    }
+
+    protected function setElementsPerPage($elementsPerPage){
+        if(is_int($elementsPerPage))
+            $this->elementsPerPage = $elementsPerPage;
+        else
+            throw new \Exception('elementPerPage need to be an integer');
+    }
+
+    protected function setCurrentPage($currentPage){
+        if(is_int($currentPage))
+            $this->currentPage = $currentPage;
+        else
+            throw new \Exception('currentPage need to be an integer');
+    }
+
+    protected function setEnableStrictMode($enableStrictMode){
+        if(is_bool($enableStrictMode))
+            $this->enableStrictMode = $enableStrictMode;
+        else
+            throw new \Exception('enableStrictMode need to be a boolean');
+    }
+
+
+    /***** Public Setters *****/
+    public function setURLTemplate($URLTemplate){
+        if(is_string($URLTemplate))
+            $this->URLTemplate = $URLTemplate;
+        else
+            throw new \Exception('URLTemplate need to be a string');
+    }
+
+    public function setURLPattern($URLPattern){
+        if(is_string($URLPattern))
+            $this->URLPattern = $URLPattern;
+        else
+            throw new \Exception('URLTemplate need to be a string');
+    }
+
 }
 
 
@@ -431,7 +526,7 @@ $EgData   = [ ['A1', 'A2', 'A3'],
               ['Z1', 'Z2', 'Z3'],
             ];
 
- $paginator = New Paginator($EgData, 2); // ($elementsPerPage = 3, $paginatorRange = 2)
+ $paginator = New Paginator($EgData, array('currentPage' => 1));
 
  $currentPageData = $paginator->getElementsForCurrentPage();
 
