@@ -110,7 +110,7 @@ class Paginator{
     
     /**
      * If you enable strict mode : 
-     *  - Use URL Generator (getURLxxx methods) without set URLTemplate will result by an \Exception
+     *  - Use URL Generator (getURLxxx methods) without set URLTemplate (or non-existing pattern) will result by an \Exception
      *  - Try to get Elements Data from a non-existing page will result by an \Exception
      *
      * @var boolean
@@ -170,6 +170,8 @@ class Paginator{
                 $this->{ucfirst($method)}($paramValue);
             }
         }
+        else
+            throw new \Exception('Invalid Parameters : Params need to be an array or instance of PaginatorOptions');
     }
     
     /**
@@ -200,6 +202,9 @@ class Paginator{
       */
     protected function generateURLForPage($page, $noCheck = false){
         
+        if($this->enableStrictMode && (empty($this->URLTemplate) || !preg_match($this->URLPattern, $this->URLTemplate)))
+            throw new \Exception ("PAGINATOR STRICT MODE : You need a valid URL Pattern / Template to use URL Generator");
+
         if(!is_int($page))
             throw new \Exception('$page in GetURLForPage need to be a integer');
 
@@ -225,6 +230,9 @@ class Paginator{
      * @return array
      */
     public function getElementsForPage($page){
+
+        if($this->enableStrictMode && !$this->existPage($page))
+            throw new \Exception ("PAGINATOR STRICT MODE : You can't get data from a non-existing page");
 
         $buffer = $this->elementToPaginate;
 
@@ -291,7 +299,7 @@ class Paginator{
      * @return bool
      */
     public function existPage($page){
-        if($page >= 1 && $page <= $this->totalPage)
+        if($page >= 1 && $page <= $this->totalPage && is_int($page))
             return true;
         return false;
     }
