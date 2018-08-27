@@ -12,12 +12,12 @@
  */
 class PaginatorOptions{
 
-    protected $paginatorRange;
-    protected $elementsPerPage;
-    protected $currentPage;
-    protected $URLTemplate;
-    protected $URLPattern;
-    protected $enableStrictMode;
+    protected $paginatorRange = 2;
+    protected $elementsPerPage = 3;
+    protected $currentPage = 1;
+    protected $URLTemplate = '{page}';
+    protected $URLPattern = '/{page}/';
+    protected $enableStrictMode = true;
 
 
     /**
@@ -95,7 +95,7 @@ class PaginatorOptions{
         if(is_string($URLPattern))
             $this->URLPattern = $URLPattern;
         else
-            throw new \Exception('URLTemplate need to be a string');
+            throw new \Exception('URLPattern need to be a string');
     }
 
     public function setEnableStrictMode($enableStrictMode){
