@@ -156,23 +156,7 @@ class Paginator{
      * You can use anonyms object, using IPaginatorOption interface or Instance of PaginatorOption to more simplicity.
      * @return void
      */
-    protected function setPaginatorParameters($params){
-        if($params === null)
-            return;
-
-        if(is_array($params) or $params instanceof PaginatorOptions)
-        {
-            if($params instanceof PaginatorOptions)
-                $params = $params->getObjectProperties();
-
-            foreach($params as $paramName => $paramValue){
-                $method = 'set'.$paramName;
-                $this->{ucfirst($method)}($paramValue);
-            }
-        }
-        else
-            throw new \Exception('Invalid Parameters : Params need to be an array or instance of PaginatorOptions');
-    }
+    
     
     /**
      * Internal use only.
